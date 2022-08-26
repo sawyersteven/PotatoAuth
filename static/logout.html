@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css" />
+    <link type="text/css" rel="stylesheet" href="./static/styles.css" />
+    <script src="./static/alerts.js?v=1"></script>
+
+    <script type="text/javascript">
+        window.onload = () => {
+            const time = 3000;
+            const interval_tick = 50;
+            const per = interval_tick / time * 100;
+            const prog_bar = document.getElementById("progbar");
+            const interval = setInterval(function () {
+                let v = parseFloat(prog_bar.value);
+                v += per;
+                if (v > 100) {
+                    v = 100;
+                    clearInterval(interval);
+                    setTimeout(() => { window.location = "../login"; }, 500);
+                }
+                prog_bar.value = v;
+            }, interval_tick);
+        }
+    </script>
+</head>
+
+<body class="is-flex is-justify-content-space-between is-flex-direction-column">
+    <div class="container py-5 px-5 is-flex is-align-items-center">
+        <div class="column is-half is-offset-one-quarter">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="subtitle card-header-title">Logged Out</h2>
+
+                </div>
+                <div class="card-content">
+                    You will be directed to the login page shortly
+                    <progress id="progbar" class="progress is-small is-info mt-5" value="0" max="100"></progress>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="alert_container" class="column is-half is-offset-one-quarter"></div>
+    <box id="footer">
+        <a href="#todo" class="tag is-info is-large">
+            <img id="logo" src="./static/logo.png" alt="">
+            <span class="courier">Potato Auth</span>
+            <!-- todo: link this -->
+        </a>
+    </box>
+</body>
+
+</html>

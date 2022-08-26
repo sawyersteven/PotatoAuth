@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Potato Auth Setup</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css">
+    <script src="./static/alerts.js?v=1"></script>
+    <script src="./static/reloader.js?v=1"></script>
+    <link rel="stylesheet" href="./static/styles.css">
+    <script type="text/javascript">
+        function SubmitUser(e) {
+            e.preventDefault();
+            const XHR = new XMLHttpRequest();
+
+            usernameInput = document.querySelector("#username");
+            passwordInput = document.querySelector("#password");
+
+            let payload = JSON.stringify({ name: usernameInput.value, password: passwordInput.value, paths: ["*"], acct_type: 1 });
+
+            passwordInput.value = "";
+
+            XHR.onload = function () {
+                if (this.status === 200) {
+                    push_alert(`Admin account ${usernameInput.value} added. You will be directed to log in shortly`, "success");
+                    setTimeout(() => {
+                        reloader("../login");
+                    }, 3000);
+                }
+                else {
+                    push_alert(this.statusText, "warning");
+                }
+            };
+
+            XHR.open('POST', '/setup');
+            XHR.send(payload);
+        }
+
+
+    </script>
+</head>
+
+<body class="is-flex is-justify-content-space-between is-flex-direction-column">
+    <div class="container py-5 px-5 is-flex is-align-items-center">
+        <div class="column is-half is-offset-one-quarter">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="subtitle card-header-title">Getting Started</h2>
+                </div>
+                <div class="card-content">
+                    <span>
+                        Add a new administrator account to enable PotatoAuth
+                    </span>
+                    <label for="usernameInput" class="label mt-2">User Name</label>
+                    <input type="text" class="input" id="username" required="true">
+
+                    <label for="passwordInput" class="label mt-2">Password</label>
+                    <input type="password" class="input" id="password" required>
+
+                    <button type="submit" class="mt-5 button is-info" onclick="SubmitUser(event)">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="alert_container" class="column is-half is-offset-one-quarter"></div>
+
+    <box id="footer">
+        <a href="#todo" class="tag is-info is-large">
+            <img id="logo" src="./static/logo.png" alt="">
+            <span class="courier">Potato Auth</span>
+            <!-- todo: link this -->
+        </a>
+    </box>
+</body>

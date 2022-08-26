@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administration</title>
+    <script src="./static/alerts.js?v=1"></script>
+    <script src="./static/reloader.js?v=1"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css">
+    <link rel="stylesheet" href="./static/styles.css">
+
+    <script type="text/javascript">
+        let row_template;
+        let user_table;
+        let save_changes_button;
+        let user_list_cache = [];
+
+        window.onload = () => {
+            let rt = document.getElementById("row_template");
+            rt.removeAttribute("id");
+            row_template = rt.cloneNode(true);
+            user_table = rt.parentElement;
+            rt.remove();
+
+            fillUserTable();
+
+            save_changes_button = document.getElementById("save_changes_button");
+        };
+
+        function fillUserTable() {
+            user_table.classList.add("hidden");
+            document.getElementById("loading_spinner").classList.remove("hidden");
+
+            user_table.querySelectorAll("tr").forEach(row => { user_table.removeChild(row) });
+
+            const XHR = new XMLHttpRequest();
+            XHR.onload = function () {
+                if (this.status !== 200) {
+                    push_alert(this.statusText, "warning");
+                    return;
+                }
+                let resp = JSON.parse(this.responseText);
+                if (!resp.ok) {
+                    push_alert(resp.response, "warning");
+                    return;
+                }
+
+                user_list_cache = resp.response;
+
+                resp.response.forEach(row => {
+                    let elem = row_template.cloneNode(true);
+                    elem.classList.remove("hidden");
+                    elem.dataset.name = row.name;
+                    elem.querySelector("td[data-field='paths']").innerText = row.paths;
+                    elem.querySelector("td[data-field='acct_type']").innerText = row.acct_type;
+                    elem.querySelector("td[data-field='name']").innerText = row.name;
+                    user_table.appendChild(elem);
+                });
+                user_table.classList.remove("hidden");
+                document.getElementById("loading_spinner").classList.add("hidden");
+            };
+
+            XHR.open('GET', '/rpc/listusers');
+            XHR.send();
+        }
+
+        function closeParentModal(event) {
+            let modal = event.currentTarget.closest("div.modal");
+            closeModal(modal);
+        }
+
+        function closeModal(modal) {
+            modal.querySelectorAll("input").forEach(inp => {
+                inp.value = "";
+            });
+            modal.querySelectorAll("button").forEach(btn => {
+                btn.disabled = false;
+            })
+            modal.classList.remove("is-active");
+        }
+
+        function openRestartServerConfirm(event, command) {
+            let modal = document.getElementById("restart_server_modal");
+            modal.querySelectorAll("[data-field='command']").forEach((elem) => { elem.innerText = command });
+            modal.dataset.command = command;
+
+            let colorClass;
+            if (command == "Restart") {
+                colorClass = "is-warning";
+            } else if (command == "Quit") {
+                colorClass = "is-danger";
+            } else {
+                push_alert("Unknown command ${command}", "warning");
+                return;
+            }
+
+            modal.querySelectorAll(".restart_color_target").forEach((elem) => {
+                elem.classList.remove("is-warning", "is-danger");
+                elem.classList.add(colorClass)
+            });
+
+
+            modal.classList.add("is-active");
+        }
+
+        function submit_restart_server(event) {
+            let modal = event.currentTarget.closest("div.modal");
+            let command = modal.dataset.command;
+
+            const XHR = new XMLHttpRequest();
+            XHR.onload = function () {
+                let resp = JSON.parse(this.responseText);
+                if (this.status !== 200) {
+                    push_alert(resp.response, "warning");
+                    return;
+                }
+                if (!resp.ok) {
+                    push_alert(resp.response, "warning");
+                    return;
+                }
+
+                if (command == "Restart") {
+                    reloader(window.location.href);
+                } else if (command == "Quit") {
+                    quitter();
+                }
+                return;
+            }
+
+            XHR.open("POST", "/rpc/restartserver");
+            XHR.send(JSON.stringify({ command: command }));
+        }
+
+        function openAddUserModal(event) {
+            document.getElementById("add_user_modal").classList.add("is-active");
+        }
+
+        function openEditUserModal(event) {
+            let row = event.currentTarget.closest("tr");
+            let modal = document.getElementById("edit_user_modal");
+            modal.dataset.name = row.dataset.name;
+            modal.querySelector("[data-field='name']").innerText = row.dataset.name;
+
+            let user_data = undefined;
+            for (i = 0; i < user_list_cache.length; i++) {
+                if (user_list_cache[i].name == modal.dataset.name) {
+                    user_data = user_list_cache[i];
+                    break;
+                }
+            }
+
+            if (user_data === undefined) {
+                push_alert(`${modal.dataset.name} not found in user cache. A refresh might fix this.`, "error");
+                return;
+            }
+
+            modal.querySelectorAll("input, select").forEach((elem) => {
+                let field = elem.dataset.field;
+                if (field === undefined) {
+                    elem.value = "";
+                    return;
+                }
+
+                let val = user_data[field] ? user_data[field] : "";
+                elem.dataset.original = val;
+                elem.value = val;
+            });
+
+            modal.classList.add("is-active");
+        }
+
+        function highlight_field_changes(event) {
+            let elem = event.currentTarget;
+            let class_elem = elem;
+            if (elem.tagName === "SELECT") {
+                class_elem = elem.parentElement;
+            }
+            if (elem.value != elem.dataset.original) {
+                class_elem.classList.add("is-info");
+            } else {
+                class_elem.classList.remove("is-info");
+            }
+        }
+
+        function openDeleteAccountModal(event) {
+            let name = event.currentTarget.closest("tr").dataset.name;
+            let modal = document.getElementById("delete_account_modal");
+            modal.querySelector("div[data-field='name']").innerText = name;
+            modal.dataset.name = name;
+            modal.classList.add("is-active");
+        }
+
+        function submit_delete_account(event) {
+            let modal = event.currentTarget.closest("div.modal");
+            let user = modal.dataset.name;
+
+            const XHR = new XMLHttpRequest();
+            XHR.onload = function () {
+                let resp = JSON.parse(this.responseText);
+                if (this.status !== 200) {
+                    push_alert(resp.response, "warning");
+                    return;
+                }
+                if (!resp.ok) {
+                    push_alert(resp.response, "warning");
+                    return;
+                }
+                user_table.querySelector(`tr[data-name='${user}']`).remove();
+
+                push_alert(resp.response, "success");
+                closeModal(modal);
+                return;
+            }
+
+            XHR.open("POST", "/rpc/removeuser");
+            XHR.send(JSON.stringify({ username: user }));
+        }
+
+        function submit_add_user(event) {
+            let modal = event.currentTarget.closest("div.modal");
+
+            let pass = modal.querySelector("#new_user_password").value;
+            let pass2 = modal.querySelector("#new_user_password_confirm").value;
+            if (pass !== pass2) {
+                push_alert("Passwords do not match", "warning");
+                return;
+            }
+            let name = modal.querySelector("#new_user_name").value;
+            let paths = modal.querySelector("#new_user_paths").value;
+            let acct_type = modal.querySelector("#new_user_acct_type").value;
+
+            const XHR = new XMLHttpRequest();
+            XHR.onload = function () {
+                if (this.status !== 200) {
+                    push_alert(this.statusText, "warning");
+                    return;
+                }
+                let resp = JSON.parse(this.responseText);
+                if (!resp.ok) {
+                    push_alert(resp.Response, "warning");
+                    return;
+                }
+                fillUserTable();
+                push_alert(resp.response, "success");
+                closeModal(modal);
+            }
+            XHR.open("POST", "/rpc/adduser");
+            XHR.send(JSON.stringify({ name: name, password: pass, paths: paths.split(','), acct_type: acct_type }));
+        }
+
+        function submit_edit_user(event) {
+            let modal = event.currentTarget.closest("div.modal");
+            let payload = { "name": modal.dataset.name };
+
+            modal.querySelectorAll("input,select").forEach((elem) => {
+                let field = elem.dataset.field;
+                let original_value = elem.dataset.original;
+                if (field === undefined || original_value === undefined) { return; }
+                if (elem.value === original_value) { return; }
+                payload[field] = elem.value;
+            });
+
+            if (payload["password"] !== undefined && payload["password"] != modal.querySelector("#updated_password_confirm").value) {
+                push_alert("Passwords do not match", "warning");
+                return;
+            }
+
+            if (payload["paths"] !== undefined) {
+                payload["paths"] = payload["paths"].split(",");
+            }
+
+            const XHR = new XMLHttpRequest();
+            XHR.onload = function () {
+                if (this.status !== 200) {
+                    push_alert(this.statusText, "warning");
+                    return;
+                }
+                let resp = JSON.parse(this.responseText);
+                if (!resp.ok) {
+                    push_alert(resp.response, "warning");
+                    return;
+                }
+                push_alert(resp.response + ". Page will automatically refresh shortly.", "success");
+                setTimeout(() => { window.location.reload(); }, 2000);
+                closeModal(modal);
+            }
+            XHR.open("POST", "/rpc/updateuser");
+            XHR.send(JSON.stringify(payload));
+        }
+
+    </script>
+</head>
+
+<body class="is-flex is-justify-content-space-between is-flex-direction-column">
+    <section class="hero is-info is-small">
+        <div class="hero-body column is-10 is-offset-1">
+            <span class="title">
+                Administration
+            </span>
+        </div>
+    </section>
+    <div class="container py-5 px-5">
+        <div class="column is-10 is-offset-1">
+
+            <div class="is-flex">
+                <h2 class="subtitle mr-5">User Accounts</h2>
+                <button title="Add new user account" type="button" class="button is-outlined is-small is-success"
+                    data-is="adduser" onclick="openAddUserModal(event)">
+                    <span class="icon">
+                        <svg style="width:24px;height:24px" viewBox="0 0 24 24">
+                            <path fill="currentColor"
+                                d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M6,10V7H4V10H1V12H4V15H6V12H9V10M15,12A4,4 0 0,0 19,8A4,4 0 0,0 15,4A4,4 0 0,0 11,8A4,4 0 0,0 15,12Z" />
+                        </svg>
+                    </span>
+                </button>
+            </div>
+
+            <table class="table is-striped">
+                <thead>
+                    <th scope="col">Name</th>
+                    <th scope="col">
+                        Permitted URL Patterns
+                    </th>
+                    <th scope="col">Acct Type</th>
+                    <th scope="col"></th>
+                </thead>
+                <tbody class="align-middle hidden border border-secondary">
+                    <tr id="row_template" class="hidden">
+                        <td data-field="name">
+                        </td>
+                        <td data-field="paths">
+                        </td>
+                        <td data-field="acct_type">
+                        </td>
+                        <td>
+                            <div class="field has-addons is-float-right">
+                                <p class="control">
+                                    <button class="button is-small is-outlined is-info"
+                                        onclick="openEditUserModal(event)">
+                                        <span class="icon is-small" data-is="edit">
+                                            <svg style="width:24px;height:24px" viewBox="0 0 24 24">
+                                                <path fill="currentColor"
+                                                    d="M10 19.11L12.11 17H7V15H14V15.12L16.12 13H7V11H17V12.12L18.24 10.89C18.72 10.41 19.35 10.14 20.04 10.14C20.37 10.14 20.7 10.21 21 10.33V5C21 3.89 20.1 3 19 3H5C3.89 3 3 3.89 3 5V19C3 20.11 3.9 21 5 21H10V19.11M7 7H17V9H7V7M21.7 14.35L20.7 15.35L18.65 13.3L19.65 12.3C19.86 12.09 20.21 12.09 20.42 12.3L21.7 13.58C21.91 13.79 21.91 14.14 21.7 14.35M12 19.94L18.06 13.88L20.11 15.93L14.06 22H12V19.94Z" />
+                                            </svg>
+                                        </span>
+                                    </button>
+                                </p>
+                                <p class="control">
+                                    <button class="button is-small is-outlined is-danger"
+                                        onclick="openDeleteAccountModal(event)">
+                                        <span class="icon is-small" data-is="trash">
+                                            <svg style="width:24px;height:24px" viewBox="0 0 24 24">
+                                                <path fill="currentColor"
+                                                    d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
+                                            </svg>
+                                        </span>
+                                    </button>
+                                </p>
+                            </div>
+
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div id="loading_spinner">
+                <progress class="progress is-small is-info mb-5" max="100"></progress>
+            </div>
+
+            <hr />
+
+            <h2 class="subtitle">Server</h2>
+            <div class="field has-addons">
+                <p class="control" title="Restart">
+                    <button class="button is-warning" onclick="openRestartServerConfirm(event, 'Restart')">
+                        <span class="icon" data-is="restart">
+                            <svg style="width:24px;height:24px" viewBox="0 0 24 24">
+                                <path fill="currentColor"
+                                    d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" />
+                            </svg>
+                        </span>
+                    </button>
+                </p>
+                <p class="control" title="Quit">
+                    <button class="button is-danger" onclick="openRestartServerConfirm(event, 'Quit')">
+                        <span class="icon" data-is="power off">
+                            <svg style="width:24px;height:24px" viewBox="0 0 24 24">
+                                <path fill="currentColor"
+                                    d="M8.27,3L3,8.27V15.73L8.27,21H15.73C17.5,19.24 21,15.73 21,15.73V8.27L15.73,3M9.1,5H14.9L19,9.1V14.9L14.9,19H9.1L5,14.9V9.1M9.12,7.71L7.71,9.12L10.59,12L7.71,14.88L9.12,16.29L12,13.41L14.88,16.29L16.29,14.88L13.41,12L16.29,9.12L14.88,7.71L12,10.59" />
+                            </svg>
+                        </span>
+                    </button>
+                </p>
+            </div>
+
+
+            <div id="alert_container"> </div>
+        </div>
+        <div id="add_user_modal" class="modal">
+            <div class="modal-background"></div>
+            <div class="modal-card">
+                <header class="modal-card-head">
+                    <p class="modal-card-title">Add New Account</p>
+                    <button class="delete" onclick="closeParentModal(event)"></button>
+                </header>
+                <section class="modal-card-body">
+
+                    <div class="field has-addons">
+
+                        <div class="control is-expanded">
+                            <label for="new_user_name" class="label mt-2">Name</label>
+
+                            <input type="text" class="input" id="new_user_name" placeholder="John Doe">
+                        </div>
+                        <div class="control">
+                            <label for="new_user_acct_type" class="label mt-2">Acct Type</label>
+
+                            <div class="select">
+                                <select id="new_user_acct_type" class="form-select acct_type">
+                                    <option value="User" selected>User</option>
+                                    <option value="Admin">Admin</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <label for="new_user_paths" class="label mt-2">Allowed Paths</label>
+                    <input type="text" class="input" id="new_user_paths" placeholder="/app/*"
+                        title="Use comma-separated glob patterns">
+
+                    <label for="new_user_password" class="label mt-2">Password</label>
+                    <input type="password" class="input" id="new_user_password" placeholder="">
+                    <label for="new_user_password_confirm" class="label mt-2">Confirm Password</label>
+                    <input type="password" class="input" id="new_user_password_confirm" placeholder="">
+                </section>
+                <footer class="modal-card-foot is-justify-content-end">
+                    <button type="button" class="button is-info" onclick="submit_add_user(event)">Submit</button>
+                </footer>
+            </div>
+        </div>
+
+        <div id="delete_account_modal" class="modal">
+            <div class="modal-background"></div>
+            <div class="modal-card">
+                <header class="modal-card-head">
+                    <p class="modal-card-title">Delete Account</p>
+                    <button class="delete" onclick="closeParentModal(event)"></button>
+                </header>
+                <section class="modal-card-body">
+                    Are you sure you would like to delete <div class="tag is-danger" data-field="name"></div>?
+                </section>
+                <footer class="modal-card-foot is-justify-content-space-between">
+                    <button type="button" class="button is-info" onclick="closeParentModal(event)">Cancel</button>
+                    <button type="button" class="button is-danger"
+                        onclick="submit_delete_account(event)">Delete</button>
+                </footer>
+            </div>
+        </div>
+
+        <div id="restart_server_modal" class="modal">
+            <div class="modal-background"></div>
+            <div class="modal-card">
+                <header class="modal-card-head">
+                    <p class="modal-card-title"><span data-field="command"></span> Server</p>
+                    <button class="delete" onclick="closeParentModal(event)"></button>
+                </header>
+                <section class="modal-card-body">
+                    Are you sure you would like to send <div class="tag restart_color_target" data-field="command">
+                    </div> command
+                    to server?
+                </section>
+                <footer class="modal-card-foot is-justify-content-space-between">
+                    <button type="button" class="button is-info" onclick="closeParentModal(event)">Cancel</button>
+                    <button type="button" class="button restart_color_target" onclick="submit_restart_server(event)"
+                        data-field="command">Delete</button>
+                </footer>
+            </div>
+        </div>
+
+
+        <div id="edit_user_modal" class="modal">
+            <div class="modal-background"></div>
+            <div class="modal-card columns">
+                <header class="modal-card-head">
+                    <span class="modal-card-title">
+                        <span class="icon is-large">
+                            <svg style="width:1.5em;height:1.5em;" viewBox="0 0 24 24" class="mr-2">
+                                <path fill="currentColor"
+                                    d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z" />
+                            </svg>
+                        </span>
+                        <span data-field="name"></span>
+                    </span>
+
+                    <button class="delete" onclick="closeParentModal(event)"></button>
+                </header>
+                <section class="modal-card-body">
+                    <div class="columns">
+                        <div class="column is-half">
+                            <label for="updated_password" class="label mt-2">Password</label>
+                            <input type="password" class="input" id="updated_password" placeholder="**********"
+                                data-original="" data-field="password" onfocusout="highlight_field_changes(event)">
+                        </div>
+                        <div class="column is-half">
+                            <label for="updated_password_confirm" class="label mt-2">Confirm Password</label>
+                            <input type="password" class="input" id="updated_password_confirm" placeholder="**********"
+                                data-original="" onfocusout="highlight_field_changes(event)">
+                        </div>
+                    </div>
+
+                    <label for="updated_paths" class="label mt-2">Allowed Paths</label>
+                    <input type="text" class="input" id="updated_paths" data-field="paths" data-original=""
+                        onfocusout="highlight_field_changes(event)">
+
+                    <label for="updated_acct_type" class="label mt-4">Account Type</label>
+                    <div class="select">
+                        <select id="updated_acct_type" class="form-select acct_type" data-field="acct_type"
+                            data-original="" onfocusout="highlight_field_changes(event)">
+                            <option value="User" selected>User</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
+                </section>
+                <footer class="modal-card-foot is-justify-content-space-between">
+                    <span class="is-size-7">Changes to a user's account may invalidate active logins</span>
+                    <button type="button" class="button is-info" onclick="submit_edit_user(event)">Submit</button>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <div id="footer">
+        <a href="#todo" class="tag is-info is-large">
+            <img id="logo" src="./static/logo.png" alt="">
+            <span class="courier">Potato Auth</span>
+            <!-- todo: link this -->
+        </a>
+    </div>
+
+</body>
+
+</html>

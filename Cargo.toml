@@ -1,0 +1,28 @@
+[package]
+name = "potato_auth"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "*", features = ["full"] }
+merge = "*"
+serde = { version = "*", features = ["derive", "rc"] }
+serde_json = "*"
+dirs = "*"
+tracing = {version = "*"}
+rolling-file = "*"
+tracing-appender = "*"
+tracing-subscriber = "*"
+clap = {version = "*", features=["derive"]}
+uuid = {version = "*", features=["v4"]}
+glob = "*"
+actix-web = "*"
+rand = "*"
+regex = "1.6"
+http = "*"
+rust-argon2 = "*"
+
+[dev-dependencies]
+reqwest = {version = "*", features=["cookies", "json"]}
