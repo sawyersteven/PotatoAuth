@@ -56,7 +56,7 @@ impl Logging {
         match file_utils::make_parent_dirs(&fp) {
             Ok(_) => {}
             Err(e) => {
-                tracing::error!("Unable to create log directory: {}", e);
+                tracing::error!("Unable to create log directory ({:#?}): {}", fp, e);
             }
         };
 

@@ -43,7 +43,7 @@ mod default_path {
         #[cfg(target_os = "windows")]
         let ld = make_path_from_home("logs");
         #[cfg(not(target_os = "windows"))]
-        let ld = format!("/var/log/{APP_NAME/");
+        let ld = format!("/var/log/{APP_NAME}/");
         return Some(ld);
     }
 }
