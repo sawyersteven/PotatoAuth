@@ -1,20 +1,21 @@
-echo "Building for $OSTYPE"
+echo "Building PotatoAuth"
+rm -r ./build/
+mkdir -p ./build/windows/
+mkdir -p ./build/linux/
 
-if [ $OSTYPE == "msys" ]; then
-    PUB_DIR="./build/windows"
-    BIN="$HOME/.cargo/target/release/potato_auth.exe"
-elif [ $OSTYPE == "linux-gnu" ]; then
-    PUB_DIR="./build/linux" 
-    BIN="$HOME/.cargo/target/release/potato_auth"
-fi
-
-echo $BIN
-
-mkdir -p $PUB_DIR
-
+# for some reason wsl doesn't understand `cargo`, but it understands calling
+# literally any other command, then `cargo`, so just send a null `:` first
+echo "Building for linux on wsl"
+wsl -- :; cargo build -r;
+echo "Building for windows"
 cargo build -r
 
-cp $BIN $PUB_DIR
-cp -r "./static/" $PUB_DIR
+echo "Copying to ./build/<target>/"
 
-echo "Build finished in $PUB_DIR"
+cp $HOME/.cargo/target/release/potato_auth.exe ./build/windows/
+cp -r ./static/ ./build/windows/
+cp ./potato_auth.nginx.conf ./build/windows/
+
+cp $HOME/.cargo/target/release/potato_auth ./build/linux/
+cp -r ./static/ ./build/linux/
+cp ./potato_auth.nginx.conf ./build/linux/
