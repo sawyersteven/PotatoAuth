@@ -1,0 +1,34 @@
+### BEGIN INIT INFO
+# Provides:          potato_auth
+# Required-Start:    $local_fs $network
+# Required-Stop:     $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: potato_auth
+# Description:       potato_auth server
+### END INIT INFO
+
+####
+# PotatoAuth systemd run script
+#
+# How to use
+#
+#    - Modify ExecStart= point toward your potato_auth binary
+#
+#    - Modify User= and Group= to the user/group to run PotatoAuth as
+#
+#    - Add any desired arguments to the end of ExecStart=[...]
+#
+####
+
+[Unit]
+Description=PotatoAuth Server
+
+[Service]
+User=potato_auth
+Group=potato_auth
+GuessMainPID=no
+ExecStart=~/PotatoAuth/potato_auth
+
+[Install]
+WantedBy=multi-user.target

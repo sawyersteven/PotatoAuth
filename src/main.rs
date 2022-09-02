@@ -19,6 +19,15 @@ const APP_NAME: &str = "PotatoAuth";
 
 #[tokio::main]
 async fn main() {
+    let bin_path = std::env::current_exe().expect("Can't get path to binary");
+    match std::env::set_current_dir(&bin_path.parent().unwrap()) {
+        Ok(_) => {}
+        Err(e) => {
+            println!("{}", e);
+            std::process::exit(1);
+        }
+    }
+
     let mut l = Logging::new();
     let args: Vec<String> = std::env::args().map(|x| x.to_string()).collect();
     let cfg = match UserConfig::new(&args) {
