@@ -4,7 +4,7 @@ use super::{remove_session, serve_file};
 
 pub async fn get(req: HttpRequest) -> HttpResponse {
     remove_session(&req);
-    return serve_file("./logout.html").await;
+    return serve_file("./static/logout.html").await;
 }
 
 #[cfg(test)]
