@@ -5,10 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Administration</title>
-    <script src="./static/alerts.js?v=1"></script>
-    <script src="./static/reloader.js?v=1"></script>
+    <script src="../potato_auth/static/alerts.js?v=1"></script>
+    <script src="../potato_auth/static/reloader.js?v=1"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css">
-    <link rel="stylesheet" href="./static/styles.css">
+    <link rel="stylesheet" href="../potato_auth/static/styles.css">
 
     <script type="text/javascript">
         let row_template;
@@ -61,7 +61,7 @@
                 document.getElementById("loading_spinner").classList.add("hidden");
             };
 
-            XHR.open('GET', '/rpc/listusers');
+            XHR.open('GET', '/potato_auth/rpc/listusers');
             XHR.send();
         }
 
@@ -128,7 +128,7 @@
                 return;
             }
 
-            XHR.open("POST", "/rpc/restartserver");
+            XHR.open("POST", "/potato_auth/rpc/restartserver");
             XHR.send(JSON.stringify({ command: command }));
         }
 
@@ -213,7 +213,7 @@
                 return;
             }
 
-            XHR.open("POST", "/rpc/removeuser");
+            XHR.open("POST", "/potato_auth/rpc/removeuser");
             XHR.send(JSON.stringify({ username: user }));
         }
 
@@ -245,7 +245,7 @@
                 push_alert(resp.response, "success");
                 closeModal(modal);
             }
-            XHR.open("POST", "/rpc/adduser");
+            XHR.open("POST", "/potato_auth/rpc/adduser");
             XHR.send(JSON.stringify({ name: name, password: pass, paths: paths.split(','), acct_type: acct_type }));
         }
 
@@ -285,7 +285,7 @@
                 setTimeout(() => { window.location.reload(); }, 2000);
                 closeModal(modal);
             }
-            XHR.open("POST", "/rpc/updateuser");
+            XHR.open("POST", "/potato_auth/rpc/updateuser");
             XHR.send(JSON.stringify(payload));
         }
 
@@ -531,7 +531,7 @@
 
     <div id="footer">
         <a href="#todo" class="tag is-info is-large">
-            <img id="logo" src="./static/logo.png" alt="">
+            <img id="logo" src="../potato_auth/static/logo.png" alt="">
             <span class="courier">Potato Auth</span>
             <!-- todo: link this -->
         </a>

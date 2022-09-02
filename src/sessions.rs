@@ -40,6 +40,7 @@ impl Session {
     /// this key, so nothing needs to be signed or otherwise obfuscated.
     pub fn cookie(&self) -> Cookie {
         return CookieBuilder::new(SESSION_NAME, &self.id)
+            .path("/")
             .same_site(SameSite::Strict)
             .finish();
     }

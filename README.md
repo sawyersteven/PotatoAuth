@@ -32,19 +32,19 @@ A default `potato_auth.config` and `potato_auth.userdb` will be created in `~/Po
 ## NGINX Config
 Nginx configurations may vary significantly, so adjust this as neccesary.
 
-* Copy `potato_auth.nginx.conf` to `/etc/nginx/sites-enabled/` and rename to `potato_auth.conf`
+* Copy `potato_auth.nginx.conf` to `/etc/nginx/` and rename to `potato_auth.conf`
 
 * Add the following lines to any server block that you want `PotatoAuth` to protect:
 
 ```
-include sites-enabled/potato_auth.conf;
+include /etc/nxing/potato_auth.conf;
 auth_request /authrequest;
 ```
 
 An example of a basic server would be the following:
 ```
 server {
-        include sites-enabled/potato_auth;
+        include /etc/nginx/potato_auth.conf;
         auth_request /authrequest;
 
         listen 80 default_server;

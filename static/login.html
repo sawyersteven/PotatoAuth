@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Login</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css" />
-    <link type="text/css" rel="stylesheet" href="./static/styles.css" />
-    <script src="./static/alerts.js?v=1"></script>
+    <link type="text/css" rel="stylesheet" href="../potato_auth/static/styles.css" />
+    <script src="../potato_auth/static/alerts.js?v=1"></script>
 
     <script type="text/javascript">
         window.onload = () => {
@@ -28,6 +28,7 @@
             });
 
             XHR.onload = function () {
+                debugger;
                 if (this.status === 200) {
                     if (window.location.href.endsWith("login")) {
                         window.location = window.location.origin;
@@ -43,7 +44,7 @@
                 }
             };
 
-            XHR.open('POST', '/login');
+            XHR.open('POST', '../potato_auth/login');
             XHR.send(payload);
         }
     </script>
@@ -73,7 +74,7 @@
     <div id="alert_container" class="column is-half is-offset-one-quarter"></div>
     <box id="footer">
         <a href="#todo" class="tag is-info is-large">
-            <img id="logo" src="./static/logo.png" alt="">
+            <img id="logo" src="../potato_auth/static/logo.png" alt="">
             <span class="courier">Potato Auth</span>
             <!-- todo: link this -->
         </a>
